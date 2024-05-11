@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { useLoaderData, json, defer, Await } from 'react-router-dom';
 
 import EventsList from '../components/EventsList';
+import getAuthToken from '../helpers/getAuthToken';
 
 function EventsPage() {
   const { events } = useLoaderData();
@@ -18,7 +19,11 @@ function EventsPage() {
 export default EventsPage;
 
 async function loadEvents() {
-  const response = await fetch('http://localhost:8080/events');
+  const response = await fetch('http://localhost:8080/events', {
+    headers: {
+      Authorization: 'Bearer ' + getAuthToken(),
+    },
+  });
 
   if (!response.ok) {
     // return { isError: true, message: 'Could not fetch events.' };
