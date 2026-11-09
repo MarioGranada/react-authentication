@@ -10,6 +10,7 @@ import {
 import classes from './EventForm.module.css';
 import getAuthToken from '../helpers/getAuthToken';
 
+import { API_URL } from '../config';
 function EventForm({ method, event }) {
   const data = useActionData();
   const navigate = useNavigate();
@@ -95,11 +96,11 @@ export async function action({ request, params }) {
     description: data.get('description'),
   };
 
-  let url = 'http://localhost:8080/events';
+  let url = API_URL + '/events';
 
   if (method === 'PATCH') {
     const eventId = params.eventId;
-    url = 'http://localhost:8080/events/' + eventId;
+    url = API_URL + '/events/' + eventId;
   }
 
   const response = await fetch(url, {

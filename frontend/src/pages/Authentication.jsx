@@ -1,6 +1,7 @@
 import { json, redirect } from 'react-router-dom';
 import AuthForm from '../components/AuthForm';
 
+import { API_URL } from '../config';
 function AuthenticationPage() {
   return <AuthForm />;
 }
@@ -18,7 +19,7 @@ export async function action({ request }) {
     password: data.get('password'),
   };
 
-  const response = await fetch('http://localhost:8080/' + mode, {
+  const response = await fetch(API_URL + '/' + mode, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

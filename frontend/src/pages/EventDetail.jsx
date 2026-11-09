@@ -11,6 +11,7 @@ import EventItem from '../components/EventItem';
 import EventsList from '../components/EventsList';
 import getAuthToken from '../helpers/getAuthToken';
 
+import { API_URL } from '../config';
 function EventDetailPage() {
   const { event, events } = useRouteLoaderData('event-detail');
 
@@ -33,7 +34,7 @@ function EventDetailPage() {
 export default EventDetailPage;
 
 async function loadEvent(id) {
-  const response = await fetch('http://localhost:8080/events/' + id);
+  const response = await fetch(API_URL + '/events/' + id);
 
   if (!response.ok) {
     throw json(
@@ -49,7 +50,7 @@ async function loadEvent(id) {
 }
 
 async function loadEvents() {
-  const response = await fetch('http://localhost:8080/events');
+  const response = await fetch(API_URL + '/events');
 
   if (!response.ok) {
     // return { isError: true, message: 'Could not fetch events.' };
@@ -79,7 +80,7 @@ export async function loader({ request, params }) {
 
 export async function action({ params, request }) {
   const eventId = params.eventId;
-  const response = await fetch('http://localhost:8080/events/' + eventId, {
+  const response = await fetch(API_URL + '/events/' + eventId, {
     method: request.method,
     headers: {
       Authorization: 'Bearer ' + getAuthToken(),

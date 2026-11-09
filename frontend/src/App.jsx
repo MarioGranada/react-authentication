@@ -73,7 +73,7 @@ const router = createBrowserRouter([
       { path: 'logout', action: action },
     ],
   },
-]);
+], { basename: import.meta.env.BASE_URL });
 
 function App() {
   return <RouterProvider router={router} />;

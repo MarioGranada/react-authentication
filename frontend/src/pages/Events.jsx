@@ -4,6 +4,7 @@ import { useLoaderData, json, defer, Await } from 'react-router-dom';
 import EventsList from '../components/EventsList';
 import getAuthToken from '../helpers/getAuthToken';
 
+import { API_URL } from '../config';
 function EventsPage() {
   const { events } = useLoaderData();
 
@@ -19,7 +20,7 @@ function EventsPage() {
 export default EventsPage;
 
 async function loadEvents() {
-  const response = await fetch('http://localhost:8080/events', {
+  const response = await fetch(API_URL + '/events', {
     headers: {
       Authorization: 'Bearer ' + getAuthToken(),
     },
