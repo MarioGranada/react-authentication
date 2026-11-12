@@ -1,56 +1,46 @@
-const { v4: generateId } = require('uuid');
-
+const { sql } = require('../db');
 const { NotFoundError } = require('../util/errors');
-const { readData, writeData } = require('./util');
 
 async function getAll() {
-  const storedData = await readData();
-  if (!storedData.events) {
-    throw new NotFoundError('Could not find any events.');
-  }
-  return storedData.events;
+  return sql`
+    select id, title, description, date, image
+    from react_auth.events
+    order by created_at desc`;
 }
 
 async function get(id) {
-  const storedData = await readData();
-  if (!storedData.events || storedData.events.length === 0) {
-    throw new NotFoundError('Could not find any events.');
-  }
-
-  const event = storedData.events.find((ev) => ev.id === id);
+  const [event] = await sql`
+    select id, title, description, date, image
+    from react_auth.events
+    where id = ${id}`;
   if (!event) {
     throw new NotFoundError('Could not find event for id ' + id);
   }
-
   return event;
 }
 
-async function add(data) {
-  const storedData = await readData();
-  storedData.events.unshift({ ...data, id: generateId() });
-  await writeData(storedData);
+async function add({ title, description, date, image }) {
+  const [event] = await sql`
+    insert into react_auth.events (title, description, date, image)
+    values (${title}, ${description}, ${date}, ${image})
+    returning id, title, description, date, image`;
+  return event;
 }
 
-async function replace(id, data) {
-  const storedData = await readData();
-  if (!storedData.events || storedData.events.length === 0) {
-    throw new NotFoundError('Could not find any events.');
-  }
-
-  const index = storedData.events.findIndex((ev) => ev.id === id);
-  if (index < 0) {
+async function replace(id, { title, description, date, image }) {
+  const [event] = await sql`
+    update react_auth.events
+    set title = ${title}, description = ${description}, date = ${date}, image = ${image}
+    where id = ${id}
+    returning id, title, description, date, image`;
+  if (!event) {
     throw new NotFoundError('Could not find event for id ' + id);
   }
-
-  storedData.events[index] = { ...data, id };
-
-  await writeData(storedData);
+  return event;
 }
 
 async function remove(id) {
-  const storedData = await readData();
-  const updatedData = storedData.events.filter((ev) => ev.id !== id);
-  await writeData({ ...storedData, events: updatedData });
+  await sql`delete from react_auth.events where id = ${id}`;
 }
 
 exports.getAll = getAll;

@@ -11,7 +11,6 @@ const {
 const router = express.Router();
 
 router.get('/', async (req, res, next) => {
-  console.log(req.token);
   try {
     const events = await getAll();
     res.json({ events: events });
@@ -32,7 +31,6 @@ router.get('/:id', async (req, res, next) => {
 router.use(checkAuth);
 
 router.post('/', async (req, res, next) => {
-  console.log(req.token);
   const data = req.body;
 
   let errors = {};
@@ -61,8 +59,8 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
-    await add(data);
-    res.status(201).json({ message: 'Event saved.', event: data });
+    const event = await add(data);
+    res.status(201).json({ message: 'Event saved.', event });
   } catch (error) {
     next(error);
   }
@@ -97,8 +95,8 @@ router.patch('/:id', async (req, res, next) => {
   }
 
   try {
-    await replace(req.params.id, data);
-    res.json({ message: 'Event updated.', event: data });
+    const event = await replace(req.params.id, data);
+    res.json({ message: 'Event updated.', event });
   } catch (error) {
     next(error);
   }

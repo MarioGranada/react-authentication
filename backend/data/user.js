@@ -1,32 +1,25 @@
 const { hash } = require('bcryptjs');
-const { v4: generateId } = require('uuid');
 
+const { sql } = require('../db');
 const { NotFoundError } = require('../util/errors');
-const { readData, writeData } = require('./util');
 
-async function add(data) {
-  const storedData = await readData();
-  const userId = generateId();
-  const hashedPw = await hash(data.password, 12);
-  if (!storedData.users) {
-    storedData.users = [];
-  }
-  storedData.users.push({ ...data, password: hashedPw, id: userId });
-  await writeData(storedData);
-  return { id: userId, email: data.email };
+// Returns only the public fields; the password hash never leaves this module
+// except through get(), which the login route uses to compare passwords.
+async function add({ email, password }) {
+  const hashedPw = await hash(password, 12);
+  const [user] = await sql`
+    insert into react_auth.users (email, password)
+    values (${email}, ${hashedPw})
+    returning id, email`;
+  return user;
 }
 
 async function get(email) {
-  const storedData = await readData();
-  if (!storedData.users || storedData.users.length === 0) {
-    throw new NotFoundError('Could not find any users.');
-  }
-
-  const user = storedData.users.find((ev) => ev.email === email);
+  const [user] = await sql`
+    select id, email, password from react_auth.users where email = ${email}`;
   if (!user) {
     throw new NotFoundError('Could not find user for email ' + email);
   }
-
   return user;
 }
 

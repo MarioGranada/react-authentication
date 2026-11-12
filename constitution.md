@@ -15,11 +15,12 @@ This document defines the non-negotiable foundations for this repository. Read i
 
 | Layer | Choice | Rationale |
 | --- | --- | --- |
-| Frontend | React 18 (Create React App 5) | The course project is a CRA SPA. |
+| Frontend | React 18 + Vite 8 | Migrated from CRA; static SPA build. |
 | Routing | React Router 6 data APIs | Loaders, actions, and protected routes keep data work outside components. |
-| Backend | Express 4 | A small API demonstrates token issuing and verification. |
-| Auth | jsonwebtoken 8 + bcryptjs | JWT sessions and password hashing without a database. |
-| Persistence | JSON files | Users and events are stored locally for the course. |
+| Backend | Express 4 | A small API demonstrates token issuing and verification; runs as a Vercel Function. |
+| Auth | jsonwebtoken 9 + bcryptjs | JWT sessions and password hashing. |
+| Persistence | Supabase Postgres (postgres.js) | Durable storage on serverless hosting; one schema (`react_auth`) in the shared portfolio database. |
+| Hosting | Vercel Services + Cron | SPA and API ship together on one origin; nightly demo reset. |
 
 **Rule of thumb:** a new dependency must solve a concrete problem that the current stack cannot solve cleanly. Justify it in the change that introduces it.
 
@@ -27,50 +28,55 @@ This document defines the non-negotiable foundations for this repository. Read i
 
 ### 1. Scope
 
-A course project for learning client/server authentication with JWTs. It is not a production identity system: it lacks refresh tokens, httpOnly cookies, rate limiting, and a real database.
+A course project for learning client/server authentication with JWTs. It is not a production identity system: it lacks refresh tokens, httpOnly cookies, and rate limiting. The public demo is kept clean by a nightly reset that deletes every account and event.
 
 ### 2. Environment Isolation
 
-- This project has no runtime secrets. Do not introduce `.env` files unless a real secret or environment-specific URL appears.
-- If configuration is added, use environment variables and document them in the README.
-- Never commit keys, tokens, database URLs, or credentials.
+- Runtime configuration comes from environment variables: `POSTGRES_URL` / `POSTGRES_URL_NON_POOLING` (Supabase integration), `JWT_SECRET` and `CRON_SECRET`. Locally they live in the gitignored root `.env.local` (`vercel env pull .env.local`).
+- Missing secrets fail closed: no `JWT_SECRET` means no tokens; no `CRON_SECRET` means no reset.
+- Document every variable in the README and `AGENTS.md`.
+- Never commit keys, tokens, database URLs, or credentials, and never log them or send database errors to the browser.
 
 ### 3. Architecture
 
 - Auth helpers live in `frontend/src/helpers/`; pages and components should not read `localStorage` directly.
 - Router loaders/actions own data fetching and mutations.
 - Backend auth logic stays in `util/auth.js`; routes compose it rather than reimplementing verification.
+- Every API route lives under `/api`; the frontend calls the same origin.
+- The backend never reads files at runtime; SQL lives in `backend/db/sql.js`.
 
 ### 4. Data and State
 
-- The backend JSON files are the source of truth for users and events.
+- The `react_auth.users` and `react_auth.events` tables are the source of truth. Schema and seed changes stay idempotent (`npm run db:migrate --prefix backend`).
+- Only touch the `react_auth` schema; the database is shared with other portfolio apps.
 - The client stores only the JWT and derives auth state from it.
 - Passwords are never returned to the client; only the token and user summary are sent.
 
 ### 5. Styling and UX
 
-- CRA global styles and CSS Modules live with their components.
+- Global styles and CSS Modules live with their components.
 - Keep form errors visible and associated with the relevant field.
 - Do not add a UI library for this course project.
 
 ### 6. Quality Gates
 
-- `cd frontend && npm run build` is the main gate.
+- `npm run build --prefix frontend` and `npm run lint --prefix frontend` are the main gates.
 - Manually test signup, duplicate email, short password, login, wrong password, protected route redirect, create, edit, delete, logout, and an expired token.
 - Confirm the API rejects mutations without a valid token.
 
 ### 7. Deployment
 
-- Frontend: static CRA build for GitHub Pages.
-- Backend: a Node host or Supabase Auth plus a hosted database.
-- Move the JWT key and API URL into environment variables before any deployment.
+- One Vercel project (Services in `vercel.json`): `frontend` serves the Vite build with SPA fallback, `backend` runs Express. Pushing to `master` deploys production.
+- The nightly cron `/api/cron/reset` deletes users and events and restores the seed.
+- Delete any test data written to production after verifying.
 
 ## What to Avoid
 
-- Shipping the hardcoded JWT key to production.
+- Hardcoding the JWT key or any other secret.
 - Storing tokens in `localStorage` for a production app without acknowledging XSS risk.
 - Trusting client-side route guards as the only authorization check.
-- Committing user data or JSON files containing real accounts.
+- Committing user data, database dumps, or `.env*` files.
+- Writing to local files from the API (not durable or writable on Vercel).
 - Adding refresh-token complexity to a course demo without a clear need.
 
 ## Checklist Before Adding Anything New

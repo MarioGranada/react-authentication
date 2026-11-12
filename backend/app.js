@@ -1,27 +1,27 @@
-const bodyParser = require('body-parser');
 const express = require('express');
 
 const eventRoutes = require('./routes/events');
 const authRoutes = require('./routes/auth');
+const cronRoutes = require('./routes/cron');
 
 const app = express();
 
-app.use(bodyParser.json());
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  next();
-});
+app.use(express.json());
 
-app.use(authRoutes);
-
-app.use('/events', eventRoutes);
+// Everything lives under /api: on Vercel the SPA and the API share one origin,
+// and in development Vite proxies /api to this server.
+const api = express.Router();
+api.use(authRoutes); // POST /api/signup, POST /api/login
+api.use('/events', eventRoutes);
+api.use('/cron', cronRoutes);
+api.use((req, res) => res.status(404).json({ message: 'Not found.' }));
+app.use('/api', api);
 
 app.use((error, req, res, next) => {
   const status = error.status || 500;
-  const message = error.message || 'Something went wrong.';
-  res.status(status).json({ message: message });
+  if (status >= 500) console.error(error);
+  // Never send database errors to the browser.
+  res.status(status).json({ message: status >= 500 ? 'Something went wrong.' : error.message });
 });
 
-app.listen(8080);
+module.exports = app;

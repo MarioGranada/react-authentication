@@ -2,14 +2,22 @@ const { sign, verify } = require('jsonwebtoken');
 const { compare } = require('bcryptjs');
 const { NotAuthError } = require('./errors');
 
-const KEY = 'supersecret';
+// Signing key from the environment (Vercel project env var, or the root
+// .env.local locally). Fail closed: without it no token is issued or accepted.
+function getKey() {
+  const key = process.env.JWT_SECRET;
+  if (!key) {
+    throw new Error('JWT_SECRET is not set.');
+  }
+  return key;
+}
 
 function createJSONToken(email) {
-  return sign({ email }, KEY, { expiresIn: '1h' });
+  return sign({ email }, getKey(), { expiresIn: '1h' });
 }
 
 function validateJSONToken(token) {
-  return verify(token, KEY);
+  return verify(token, getKey(), { algorithms: ['HS256'] });
 }
 
 function isValidPassword(password, storedPassword) {
@@ -21,13 +29,11 @@ function checkAuthMiddleware(req, res, next) {
     return next();
   }
   if (!req.headers.authorization) {
-    console.log('NOT AUTH. AUTH HEADER MISSING.');
     return next(new NotAuthError('Not authenticated.'));
   }
   const authFragments = req.headers.authorization.split(' ');
 
   if (authFragments.length !== 2) {
-    console.log('NOT AUTH. AUTH HEADER INVALID.');
     return next(new NotAuthError('Not authenticated.'));
   }
   const authToken = authFragments[1];
@@ -35,7 +41,6 @@ function checkAuthMiddleware(req, res, next) {
     const validatedToken = validateJSONToken(authToken);
     req.token = validatedToken;
   } catch (error) {
-    console.log('NOT AUTH. TOKEN INVALID.');
     return next(new NotAuthError('Not authenticated.'));
   }
   next();

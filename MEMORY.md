@@ -1,38 +1,41 @@
 # React Authentication — Working Memory
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-12_
 
 ## Current status
 
-- Signup, login, logout, protected routes, and event CRUD work against the local API.
-- JWT issuing/verification and bcrypt hashing are implemented.
-- No tests or deployment workflow yet.
+- Live on Vercel: https://react-authentication-xi-ivory.vercel.app (pushes to `master` deploy production).
+- One Vercel project with Services: `frontend` (Vite 8 SPA) + `backend` (Express under `/api`).
+- Users and events live in the `react_auth` schema of the shared Supabase Postgres (`portfolio-db`).
+- `JWT_SECRET` and `CRON_SECRET` are Vercel env vars (random, never printed or committed).
+- Nightly Vercel Cron (04:00 UTC) calls `/api/cron/reset`: deletes users and events, restores 3 seed events.
+- Signup, login, protected create/edit/delete, validation and 404 flows verified in headless Chrome against production.
+- No automated tests.
 
 ## Key decisions
 
 - Used React Router loaders/actions so auth and data work stay outside components.
-- Kept JSON persistence to match the course and avoid a database dependency.
+- Replaced the JSON files with Postgres (files are not writable or durable on Vercel).
+- Same-origin `/api` (Vite proxy locally) instead of a separate API host: no CORS, no URL env var.
+- JWT key moved from the hardcoded `supersecret` to `JWT_SECRET`; missing key fails closed.
+- Seed and reset SQL live in `backend/db/sql.js`: the Vercel service bundle dropped runtime-read files.
 
 ## Known limitations and follow-ups
 
-- Hardcoded JWT key and API URLs.
 - Token in `localStorage` with no refresh flow.
-- JSON files are not durable or multi-user safe.
-- No rate limiting, email verification, or password reset.
+- No rate limiting, email verification, password reset, or per-user event ownership.
 
 ## Mistakes to avoid
 
 - Starting only the frontend makes login fail silently from the user’s perspective.
-- A changed JWT key invalidates all existing sessions.
+- A changed `JWT_SECRET` invalidates all existing sessions.
 - Forgetting the `Authorization` header on a mutation returns a 401.
-- CRA test runs watch unless `CI=true` is set.
+- Browser tests: the header's newsletter form is the first `form` on every page (it raises an `alert`).
 
 ## Next steps
 
-- Move the JWT key and API URL into environment variables.
-- Add refresh tokens or switch to httpOnly cookies.
-- Replace JSON files with a real database.
 - Add tests for the auth routes and route guards.
+- Consider httpOnly cookies instead of `localStorage`.
 
 ---
 

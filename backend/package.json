@@ -1,19 +1,23 @@
 {
-  "name": "backend-api",
+  "name": "react-authentication-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Express API for the react-authentication events demo (JWT auth, Postgres on Supabase).",
+  "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node --env-file-if-exists=../.env.local server.js",
+    "dev": "node --env-file-if-exists=../.env.local --watch server.js",
+    "db:migrate": "node --env-file-if-exists=../.env.local scripts/db.js migrate",
+    "db:reset": "node --env-file-if-exists=../.env.local scripts/db.js reset"
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": "22.x"
+  },
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.0",
-    "express": "^4.18.1",
-    "jsonwebtoken": "^8.5.1",
-    "uuid": "^9.0.0"
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "postgres": "^3.4.9"
   }
 }

@@ -20,7 +20,7 @@ router.post('/signup', async (req, res, next) => {
     } catch (error) {}
   }
 
-  if (!isValidText(data.password, 6)) {
+  if (!isValidText(data.password, 6, 200)) {
     errors.password = 'Invalid password. Must be at least 6 characters long.';
   }
 
@@ -38,6 +38,13 @@ router.post('/signup', async (req, res, next) => {
       .status(201)
       .json({ message: 'User created.', user: createdUser, token: authToken });
   } catch (error) {
+    if (error.code === '23505') {
+      // Unique violation: the same email signed up concurrently.
+      return res.status(422).json({
+        message: 'User signup failed due to validation errors.',
+        errors: { email: 'Email exists already.' },
+      });
+    }
     next(error);
   }
 });
